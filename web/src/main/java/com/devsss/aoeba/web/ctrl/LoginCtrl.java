@@ -1,10 +1,11 @@
 package com.devsss.aoeba.web.ctrl;
 
-import com.devsss.aoeba.service.vo.UserInfo;
+import com.devsss.aoeba.service.domain.UserInfo;
+import com.devsss.aoeba.web.dto.BaseResponse;
 import com.devsss.aoeba.web.dto.LoginRequest;
-import com.devsss.aoeba.web.dto.LoginResponse;
 import com.devsss.aoeba.login.utils.JwtUtil;
 import com.devsss.aoeba.service.service.UserService;
+import com.devsss.aoeba.web.dto.RespCode;
 import lombok.AllArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -22,20 +23,24 @@ public class LoginCtrl {
     UserService userService;
 
     @PostMapping("/login")
-    public Mono<LoginResponse> login(@RequestBody LoginRequest request) {
+    public Mono<BaseResponse<String>> login(@RequestBody LoginRequest request) {
         UserInfo user = userService.getUser(request.getUsername(), request.getPassword());
-        final LoginResponse response = new LoginResponse();
-        response.setSuccessful(true);
-        response.setToken(JwtUtil.getToken(user.getUsername(), user.getAuthorities().stream()
-                .map(SimpleGrantedAuthority::new).collect(Collectors.toList())));
+        final BaseResponse<String> response = new BaseResponse<>();
+        if (user == null) {
+            response.setCode(RespCode.ERROR.getCode());
+        } else {
+            response.setCode(RespCode.OK.getCode());
+            response.setData(JwtUtil.getToken(user.getUsername(), user.getAuthorities().stream()
+                    .map(SimpleGrantedAuthority::new).collect(Collectors.toList())));
+        }
         return Mono.just(response);
     }
 
     @PostMapping("/flashToken")
-    public Mono<LoginResponse> flashToken(Authentication authentication) {
-        LoginResponse response = new LoginResponse();
-        response.setSuccessful(true);
-        response.setToken(JwtUtil.getToken(authentication.getName(), authentication.getAuthorities()));
+    public Mono<BaseResponse<String>> flashToken(Authentication authentication) {
+        BaseResponse<String> response = new BaseResponse<>();
+        response.setCode(RespCode.OK.getCode());
+        response.setData(JwtUtil.getToken(authentication.getName(), authentication.getAuthorities()));
         return Mono.just(response);
     }
 }

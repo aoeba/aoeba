@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.devsss.aoeba.service.mapper.UserMapper">
+
+    <resultMap id="BaseResultMap" type="com.devsss.aoeba.service.domain.UserInfo">
+        <id property="username" column="user_name" jdbcType="VARCHAR"/>
+        <result property="password" column="password" jdbcType="VARCHAR"/>
+    </resultMap>
+    <select id="getUserInfo" resultType="com.devsss.aoeba.service.domain.UserInfo">
+        select *
+        from user
+        where user_name = #{username}
+          and password = #{password}
+    </select>
+    <select id="getUserInfoByName" resultType="com.devsss.aoeba.service.domain.UserInfo">
+        select *
+        from user
+        where user_name = #{username}
+    </select>
+
+</mapper>

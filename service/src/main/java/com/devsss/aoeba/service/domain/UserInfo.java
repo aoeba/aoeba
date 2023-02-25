@@ -1,4 +1,4 @@
-package com.devsss.aoeba.service.vo;
+package com.devsss.aoeba.service.domain;
 
 import lombok.Data;
 
