@@ -66,27 +66,11 @@
                     </excludes>
                     <mainClass>com.devsss.aoeba.web.WebApplication</mainClass>
                 </configuration>
-            </plugin>
-            <!--将配置文件从jar独立出来,实现动态修改配置文件-->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>copy-resources</id>
-                        <phase>package</phase>
                         <goals>
-                            <goal>copy-resources</goal>
+                            <goal>repackage</goal><!--可以把依赖的包都打包到生成的Jar包中-->
                         </goals>
-                        <configuration>
-                            <encoding>UTF-8</encoding>
-                            <outputDirectory>${project.build.directory}/resources</outputDirectory>
-                            <resources>
-                                <resource>
-                                    <directory>src/main/resources/</directory>
-                                </resource>
-                            </resources>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
