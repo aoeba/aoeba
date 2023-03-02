@@ -10,4 +10,5 @@ public class DirItem {
     String name;
     Boolean isFolder;
     String url;
+    int last_modified;
 }

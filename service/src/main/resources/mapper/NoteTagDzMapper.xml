@@ -31,7 +31,7 @@
         from note_tag_dz
         where note_id = #{id}
     </delete>
-    <select id="selectListByNoteId" resultType="com.devsss.aoeba.service.domain.NoteTagDz">
+    <select id="selectListByNoteId" resultMap="BaseResultMap">
         select *
         from note_tag_dz
         where note_id = #{id}

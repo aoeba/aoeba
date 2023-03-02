@@ -44,7 +44,7 @@
         from note
         where id = #{id}
     </select>
-    <select id="findByTagsAndKeyword" resultType="com.devsss.aoeba.service.domain.Note">
+    <select id="findByTagsAndKeyword" resultMap="BaseResultMap">
         select * from note where
         <if test="keyword != null and keyword != ''">
             <bind name="keywd" value="'%' + keyword + '%'"/>
@@ -66,12 +66,12 @@
         from note
         group by category
     </select>
-    <select id="queryNotesByMark" resultType="com.devsss.aoeba.service.domain.Note">
+    <select id="queryNotesByMark" resultMap="BaseResultMap">
         select *
         from note
         where mark = #{mark}
     </select>
-    <select id="findTop10ByCreateAtDesc" resultType="com.devsss.aoeba.service.domain.Note">
+    <select id="findTop10ByCreateAtDesc" resultMap="BaseResultMap">
         select *
         from note
         order by created_at desc

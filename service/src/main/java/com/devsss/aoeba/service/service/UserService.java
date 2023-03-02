@@ -19,6 +19,9 @@ public class UserService {
 
     public UserInfo getUser(String username, String password) {
         UserInfo userInfo = userMapper.getUserInfo(username, password);
+        if (userInfo == null) {
+            return null;
+        }
         userInfo.setAuthorities(Collections.singletonList("admin"));
         return userInfo;
     }

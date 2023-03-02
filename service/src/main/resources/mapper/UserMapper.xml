@@ -5,19 +5,19 @@
 <mapper namespace="com.devsss.aoeba.service.mapper.UserMapper">
 
     <resultMap id="BaseResultMap" type="com.devsss.aoeba.service.domain.UserInfo">
-        <id property="username" column="user_name" jdbcType="VARCHAR"/>
+        <id property="userName" column="user_name" jdbcType="VARCHAR"/>
         <result property="password" column="password" jdbcType="VARCHAR"/>
     </resultMap>
-    <select id="getUserInfo" resultType="com.devsss.aoeba.service.domain.UserInfo">
+    <select id="getUserInfo" resultMap="BaseResultMap">
         select *
         from user
-        where user_name = #{username}
+        where user_name = #{userName}
           and password = #{password}
     </select>
-    <select id="getUserInfoByName" resultType="com.devsss.aoeba.service.domain.UserInfo">
+    <select id="getUserInfoByName" resultMap="BaseResultMap">
         select *
         from user
-        where user_name = #{username}
+        where user_name = #{userName}
     </select>
 
 </mapper>

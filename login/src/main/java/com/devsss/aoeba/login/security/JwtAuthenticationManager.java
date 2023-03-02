@@ -26,7 +26,11 @@ public class JwtAuthenticationManager implements ReactiveAuthenticationManager {
         log.debug("开始执行JwtAuthenticationManager.authenticate");
         return Mono.just(authentication)
                 .map(auth -> {
-                            Jwt decode = jwtDecoder.decode((String) auth.getCredentials());
+                            String token = (String) auth.getCredentials();
+                            if ("".equals(token) || token == null) {
+                                return new UsernamePasswordAuthenticationToken(null, null);
+                            }
+                            Jwt decode = jwtDecoder.decode(token);
                             String claims = decode.getClaim("scope");
                             log.debug("用户名：" + decode.getSubject() + "  权限:" + claims);
                             return new UsernamePasswordAuthenticationToken(decode.getSubject(), null,

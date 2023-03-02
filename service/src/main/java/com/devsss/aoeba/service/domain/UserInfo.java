@@ -6,7 +6,7 @@ import java.util.List;
 
 @Data
 public class UserInfo {
-    String username;
+    String userName;
     String password;
     List<String> authorities;
 }

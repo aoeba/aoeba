@@ -7,7 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface UserMapper {
 
-    UserInfo getUserInfo(String username, String password);
+    UserInfo getUserInfo(String userName, String password);
 
-    UserInfo getUserInfoByName(String username);
+    UserInfo getUserInfoByName(String userName);
 }

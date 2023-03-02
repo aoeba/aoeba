@@ -24,13 +24,14 @@ public class LoginCtrl {
 
     @PostMapping("/login")
     public Mono<BaseResponse<String>> login(@RequestBody LoginRequest request) {
-        UserInfo user = userService.getUser(request.getUsername(), request.getPassword());
+        UserInfo user = userService.getUser(request.getUserName(), request.getPassword());
         final BaseResponse<String> response = new BaseResponse<>();
         if (user == null) {
             response.setCode(RespCode.ERROR.getCode());
+            response.setMsg("帐号或密码错误");
         } else {
             response.setCode(RespCode.OK.getCode());
-            response.setData(JwtUtil.getToken(user.getUsername(), user.getAuthorities().stream()
+            response.setData(JwtUtil.getToken(user.getUserName(), user.getAuthorities().stream()
                     .map(SimpleGrantedAuthority::new).collect(Collectors.toList())));
         }
         return Mono.just(response);

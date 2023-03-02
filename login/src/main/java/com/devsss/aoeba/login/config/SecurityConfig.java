@@ -34,7 +34,7 @@ public class SecurityConfig {
         // KeyPairGenerator类用于生成公钥和私钥对，基于RSA算法生成对象
         KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("RSA");
         // 初始化密钥对生成器
-        keyPairGen.initialize(1024, new SecureRandom());
+        keyPairGen.initialize(2048, new SecureRandom());
         // 生成一个密钥对，保存在keyPair中
         return keyPairGen.generateKeyPair();
     }
@@ -43,8 +43,8 @@ public class SecurityConfig {
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity security, TokenServerSecurityContextRepository tokenContextRepository) {
         security.authorizeExchange()
                 .pathMatchers("/login").permitAll()
-                .pathMatchers(HttpMethod.GET).permitAll()
-                .pathMatchers("/storage", "/wxgzh").authenticated()
+                .pathMatchers(HttpMethod.OPTIONS).permitAll()
+                .pathMatchers(HttpMethod.GET, "/index", "/note/**").permitAll()
                 .anyExchange().authenticated()
                 .and()
                 // 禁用csrf
