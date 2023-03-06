@@ -27,6 +27,7 @@ public class ErrorWebExceptionHandler extends AbstractErrorWebExceptionHandler {
             Throwable error = errorAttributes.getError(request);
             ServerResponse.BodyBuilder builder = ServerResponse.status(HttpStatus.OK);
             // ... additional builder calls
+            error.printStackTrace();
             return builder.bodyValue(new BaseResponse<>(RespCode.ERROR, error.getMessage(), null));
         });
     }

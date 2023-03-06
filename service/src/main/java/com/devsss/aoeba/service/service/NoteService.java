@@ -1,16 +1,20 @@
 package com.devsss.aoeba.service.service;
 
+import com.devsss.aoeba.service.dao.NoteDao;
+import com.devsss.aoeba.service.dao.NoteTagDzDao;
 import com.devsss.aoeba.service.domain.Note;
 import com.devsss.aoeba.service.domain.NoteTagDz;
-import com.devsss.aoeba.service.mapper.NoteMapper;
-import com.devsss.aoeba.service.mapper.NoteTagDzMapper;
-import com.github.pagehelper.Page;
-import com.github.pagehelper.PageHelper;
+import com.devsss.aoeba.service.vo.PageInfo;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -19,21 +23,69 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class NoteService {
 
-    NoteMapper noteMapper;
+    NoteDao noteDao;
 
-    NoteTagDzMapper noteTagDzMapper;
+    NoteTagDzDao noteTagDzDao;
 
-    public Note save(Note note) {
+    DatabaseClient databaseClient;
+
+    R2dbcEntityTemplate r2dbcEntityTemplate;
+
+    /**
+     * 批量新增noteTagDz
+     *
+     * @param dzs 待新增列表
+     * @return 结果
+     */
+    private Mono<Void> insertNoteTagDzBatch(List<NoteTagDz> dzs) {
+        if (dzs.size() < 1) {
+            return Mono.empty();
+        }
+        return databaseClient.sql("insert into note_tag_dz (note_id,tag_name,id) values ( ?, ?,?)").filter(statement -> {
+            dzs.forEach(noteTagDz -> {
+                statement.bind(0, noteTagDz.getNoteId()).bind(1, noteTagDz.getTagName()).bind(2, noteTagDz.getId()).add();
+            });
+            return statement;
+        }).then();
+    }
+
+    /**
+     * 批量删除noteTagDz
+     *
+     * @param dzs 待删除列表
+     * @return 结果
+     */
+    private Mono<Void> deleteNoteTagDzBatch(List<NoteTagDz> dzs) {
+        if (dzs.size() < 1) {
+            return Mono.empty();
+        }
+        return databaseClient.sql("delete from note_tag_dz where note_id = ? and tag_name = ?").filter(statement -> {
+            dzs.forEach(noteTagDz -> {
+                statement.bind(0, noteTagDz.getNoteId()).bind(1, noteTagDz.getTagName()).add();
+            });
+            return statement;
+        }).then();
+    }
+
+    /**
+     * 更新或新增note
+     *
+     * @param note 待处理note
+     * @return 操作结果
+     */
+    public Mono<Note> save(Note note) {
+        // TODO Transaction does not work in MySQL environment #250:https://github.com/mirromutth/r2dbc-mysql/issues/250
         boolean isInsert = false;
+        Mono<Note> noteMono;
         if (note.getId() == null || "".equals(note.getId())) {
             isInsert = true;
             // 新增
             note.setId(RandomStringUtils.randomAlphabetic(8));
-            note.setCreatedAt(new Date());
-            noteMapper.insert(note);
+            note.setCreatedAt(LocalDateTime.now());
+            note.setViews(0);
+            noteMono = r2dbcEntityTemplate.insert(note);
         } else {
-            // 更新
-            noteMapper.updateNoteInfoById(note);
+            noteMono = r2dbcEntityTemplate.update(note);
         }
         // 更新note与tag对照表
         if (note.getTags() != null && !note.getTags().equals("")) {
@@ -43,71 +95,133 @@ public class NoteService {
                     .collect(Collectors.toList());
             if (isInsert) {
                 nowTags.forEach(x -> {
-                    NoteTagDz t = new NoteTagDz();
-                    t.setTagName(x);
-                    t.setNoteId(note.getId());
-                    addList.add(t);
+                    addList.add(new NoteTagDz(note.getId(), x));
                 });
+                Mono<Void> saveMono = insertNoteTagDzBatch(addList);
+                return Mono.zip(noteMono, saveMono, (t1, t2) -> t1);
             } else {
-                List<NoteTagDz> noteTagDzs = noteTagDzMapper.selectListByNoteId(note.getId());
-                List<NoteTagDz> del = noteTagDzs.stream().filter(x -> !nowTags.contains(x.getTagName())).collect(Collectors.toList());
-                delList.addAll(del);
-                List<String> noteTagNames = noteTagDzs.stream().map(NoteTagDz::getTagName).collect(Collectors.toList());
-                nowTags.forEach(x -> {
-                    if (!noteTagNames.contains(x)) {
-                        NoteTagDz t = new NoteTagDz();
-                        t.setTagName(x);
-                        t.setNoteId(note.getId());
-                        addList.add(t);
-                    }
-                });
-            }
-            if (delList.size() > 0) {
-                noteTagDzMapper.deleteBatchIds(delList);
-            }
-            if (addList.size() > 0) {
-                noteTagDzMapper.saveBatchByNative(addList);
+                Flux<NoteTagDz> noteTagDzMono = noteTagDzDao.selectListByNoteId(note.getId());
+                Mono<Void> addTagDzMono = noteTagDzMono
+                        .map(NoteTagDz::getTagName).collectList().defaultIfEmpty(Collections.singletonList("")).flatMap(dzs -> {
+                            dzs.forEach(dz -> {
+                                if (!nowTags.contains(dz)) {
+                                    log.debug("获取待删除的noteTagDz:{}-{}", note.getId(), dz);
+                                    delList.add(new NoteTagDz(note.getId(), dz));
+                                }
+                            });
+                            nowTags.forEach(x -> {
+                                if (!dzs.contains(x)) {
+                                    log.debug("获取待新增的noteTagDz:{}-{}", note.getId(), x);
+                                    addList.add(new NoteTagDz(note.getId(), x));
+                                }
+                            });
+                            Mono<Void> delMono = deleteNoteTagDzBatch(delList);
+                            Mono<Void> saveMono = insertNoteTagDzBatch(addList);
+                            return Flux.merge(delMono, saveMono).then();
+                        });
+                return Mono.zip(noteMono, addTagDzMono, (t1, t2) -> t1).defaultIfEmpty(note).map(n -> n);
             }
         } else {
-            noteTagDzMapper.deleteById(note.getId());
+            Mono<Void> delMono = noteTagDzDao.deleteByNoteId(note.getId());
+            return Mono.zip(noteMono, delMono, (t1, t2) -> t1).defaultIfEmpty(note).map(n -> n);
         }
-
-        return note;
     }
 
-    public Note findNoteById(String id) {
-        return noteMapper.selectNoteById(id);
+    /**
+     * 根据note id查询note
+     *
+     * @param id note id
+     * @return 结果
+     */
+    public Mono<Note> findNoteById(String id) {
+        return noteDao.findById(id);
     }
 
-    public Page<Note> findNotesByTagsAndKeyword(List<String> tags, String keyword, int pageNo, int pageSize, String category) {
-        PageHelper.startPage(pageNo, pageSize);
-        List<Note> noteList = noteMapper.findByTagsAndKeyword(tags, keyword, category);
-        Page<Note> nPage = (Page<Note>) noteList;
-        log.debug("查询到note数量:" + nPage.getResult().size() + " 当前页:" + nPage.getPageNum() + " 总数:" + nPage.getTotal());
-        return nPage;
+    /**
+     * 根据标签、关键字、分类查询note（分页）
+     *
+     * @param tags     标签列表
+     * @param keyword  关键字
+     * @param pageNo   当前页数
+     * @param pageSize 每页条数
+     * @param category 分类
+     * @return 查询结果
+     */
+    public Mono<PageInfo<Note>> findNotesByTagsAndKeyword(List<String> tags, String keyword, int pageNo,
+                                                          int pageSize, String category) {
+        Flux<Note> noteFlux = noteDao.findByTagsAndKeyword(tags == null || tags.size() == 0 ? 0 : 1, tags,
+                Objects.equals(keyword, "") ? 0 : 1,
+                keyword, Objects.equals(category, "") ? 0 : 1, category, pageSize * (pageNo - 1), pageSize);
+        Mono<Long> countMono = noteDao.count();
+        PageInfo<Note> pageInfo = new PageInfo<>();
+        return Mono.zip(countMono, noteFlux.collect(Collectors.toList()), (total, noteList) -> {
+            pageInfo.setTotal(total);
+            pageInfo.setPages((int) ((total + pageSize - 1) / pageSize));
+            pageInfo.setPageNo(pageNo);
+            pageInfo.setPageSize(pageSize);
+            pageInfo.setHasContent(noteList.size() > 0);
+            pageInfo.setHasNext(pageInfo.getPages() > pageNo);
+            pageInfo.setContent(noteList);
+            return pageInfo;
+        });
     }
 
-    public List<Map<String, Object>> countTag() {
-        List<Map<String, Object>> tagMapList = noteTagDzMapper.countTag();
-        log.debug("countTag:" + tagMapList.size());
-        return tagMapList;
+    /**
+     * 统计tag数量
+     *
+     * @return [{name:'',size:''}]
+     */
+    public Flux<Map<String, Object>> countTag() {
+        // 返回值使用map接收时返回的是 note属性组成的map,故使用对象接收再转成map
+        return noteTagDzDao.countTag().map(c -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("name", c.getName());
+            m.put("size", c.getSize());
+            return m;
+        });
     }
 
-    public List<Map<String, Object>> countCategory() {
-        List<Map<String, Object>> categoryMapList = noteMapper.countCategory();
-        log.debug("countCategory:" + categoryMapList.size());
-        return categoryMapList;
+    /**
+     * 统计分类数量
+     *
+     * @return [{category:'',size:''}]
+     */
+    public Flux<Map<String, Object>> countCategory() {
+        return noteDao.countCategory().map(c -> {
+            Map<String, Object> m = new HashMap<>();
+            m.put("category", c.getCategory());
+            m.put("size", c.getSize());
+            return m;
+        });
     }
 
-    public int updateMarkById(String id, int mark) {
-        return noteMapper.updateMarkById(id, mark);
+    /**
+     * 根据note id更新mark
+     *
+     * @param id   note id
+     * @param mark 更新后mark
+     * @return 影响记录
+     */
+    public Mono<Long> updateMarkById(String id, int mark) {
+        return noteDao.updateMarkById(id, mark);
     }
 
-    public List<Note> queryNotesByMark(int mark) {
-        return noteMapper.queryNotesByMark(mark);
+    /**
+     * 根据mark查询note
+     *
+     * @param mark mark值
+     * @return 查询结果
+     */
+    public Flux<Note> queryNotesByMark(int mark) {
+        return noteDao.queryNotesByMark(mark);
     }
 
-    public List<Note> findTop10ByCreateAtDesc() {
-        return noteMapper.findTop10ByCreateAtDesc();
+    /**
+     * 查询最近10条note
+     *
+     * @return 最近10条note
+     */
+    public Flux<Note> findTop10ByCreateAtDesc() {
+        return noteDao.findTop10ByCreateAtDesc();
     }
 }

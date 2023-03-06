@@ -1,7 +1,7 @@
 package com.devsss.aoeba.web.dto;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 
 import com.devsss.aoeba.service.domain.Note;
 import lombok.Data;
@@ -11,11 +11,11 @@ public class NoteEx {
 
     String id;
 
-    Date createdAt;
+    LocalDateTime createdAt;
 
-    Date updatedAt;
+    LocalDateTime updatedAt;
 
-    Date deletedAt;
+    LocalDateTime deletedAt;
 
     String title;
 

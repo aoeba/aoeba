@@ -1,27 +1,29 @@
 package com.devsss.aoeba.service.domain;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import lombok.Data;
 import lombok.ToString;
+import org.springframework.data.annotation.Id;
 
 @Data
 @ToString
 public class Note {
 
+    @Id
     private String id;
 
     private String content;
 
-    private Date createdAt;
+    private LocalDateTime createdAt;
 
-    private Date deletedAt;
+    private LocalDateTime deletedAt;
 
     private String tags;
 
     private String title;
 
-    private Date updatedAt;
+    private LocalDateTime updatedAt;
 
     private Integer views;
 

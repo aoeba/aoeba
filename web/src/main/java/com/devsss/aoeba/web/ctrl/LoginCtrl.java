@@ -1,9 +1,9 @@
 package com.devsss.aoeba.web.ctrl;
 
+import com.devsss.aoeba.login.utils.JwtUtil;
 import com.devsss.aoeba.service.domain.UserInfo;
 import com.devsss.aoeba.web.dto.BaseResponse;
 import com.devsss.aoeba.web.dto.LoginRequest;
-import com.devsss.aoeba.login.utils.JwtUtil;
 import com.devsss.aoeba.service.service.UserService;
 import com.devsss.aoeba.web.dto.RespCode;
 import lombok.AllArgsConstructor;
