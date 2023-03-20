@@ -149,10 +149,12 @@ public class NoteService {
      */
     public Mono<PageInfo<Note>> findNotesByTagsAndKeyword(List<String> tags, String keyword, int pageNo,
                                                           int pageSize, String category) {
-        Flux<Note> noteFlux = noteDao.findByTagsAndKeyword(tags == null || tags.size() == 0 ? 0 : 1, tags,
-                Objects.equals(keyword, "") ? 0 : 1,
-                keyword, Objects.equals(category, "") ? 0 : 1, category, pageSize * (pageNo - 1), pageSize);
-        Mono<Long> countMono = noteDao.count();
+        int byTags = tags == null || tags.size() == 0 ? 0 : 1;
+        int byKeyword = Objects.equals(keyword, "") ? 0 : 1;
+        int byCategory = Objects.equals(category, "") ? 0 : 1;
+        Flux<Note> noteFlux = noteDao.findByTagsAndKeyword(byTags, tags, byKeyword, keyword, byCategory, category,
+                pageSize * (pageNo - 1), pageSize);
+        Mono<Long> countMono = noteDao.count(byTags, tags, byKeyword, keyword, byCategory, category);
         PageInfo<Note> pageInfo = new PageInfo<>();
         return Mono.zip(countMono, noteFlux.collect(Collectors.toList()), (total, noteList) -> {
             pageInfo.setTotal(total);

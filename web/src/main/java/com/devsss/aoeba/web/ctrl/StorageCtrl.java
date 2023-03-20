@@ -8,10 +8,13 @@ import com.devsss.aoeba.web.plugin.storage.Response;
 import com.devsss.aoeba.web.utils.BeanUtil;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import reactor.core.publisher.Mono;
 
+import java.io.SequenceInputStream;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -59,7 +62,11 @@ public class StorageCtrl {
             Response resp = storage.readDir(path);
             if (resp.isSuccessful()) {
                 Object result = resp.getResult();
-                List<DirItem> dirItems = BeanUtil.mapListToBeanList((List<Map<String, Object>>) result, DirItem.class);
+                List<Map<String, Object>> mapList = (List<Map<String, Object>>) result;
+                if (mapList == null || mapList.size() == 0) {
+                    return new BaseResponse<>(RespCode.OK, "成功", new ArrayList<>());
+                }
+                List<DirItem> dirItems = BeanUtil.mapListToBeanList(mapList, DirItem.class);
                 return new BaseResponse<>(RespCode.OK, "成功", dirItems);
             } else {
                 return new BaseResponse<>(RespCode.ERROR, resp.getMsg(), null);
@@ -71,27 +78,28 @@ public class StorageCtrl {
     }
 
     @PostMapping("/writefile")
-    public BaseResponse<Object> writeFile(@RequestParam MultipartFile file, @RequestParam String path) {
-        LocalDate now = LocalDate.now();
-        StringBuilder sb = new StringBuilder();
-        if (path == null || path.equals("")) {
-            sb.append("/").append(now.getYear()).append("/")
-                    .append(now.getMonthValue() > 9 ? now.getMonthValue() : "0" + now.getMonthValue())
-                    .append("/").append(file.getOriginalFilename());
-        } else {
-            sb.append(path).append("/").append(file.getOriginalFilename());
-        }
-        try {
-            Response resp = storage.writeFile(
-                    sb.toString(), file);
-            if (resp.isSuccessful()) {
-                return new BaseResponse<>(RespCode.OK, "成功", resp.getResult());
+    public Mono<BaseResponse<Object>> writeFile(@RequestPart("file") FilePart file, @RequestPart("path") String path) {
+        return file.content().map(b -> b.asInputStream(true)).reduce(SequenceInputStream::new).map(ins -> {
+            LocalDate now = LocalDate.now();
+            StringBuilder sb = new StringBuilder();
+            if (path == null || path.equals("")) {
+                sb.append("/").append(now.getYear()).append("/")
+                        .append(now.getMonthValue() > 9 ? now.getMonthValue() : "0" + now.getMonthValue())
+                        .append("/").append(file.filename());
             } else {
-                return new BaseResponse<>(RespCode.ERROR, resp.getMsg(), null);
+                sb.append(path).append("/").append(file.filename());
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new BaseResponse<>(RespCode.ERROR, e.getMessage(), null);
-        }
+            try {
+                Response resp = storage.writeFile(sb.toString(), ins);
+                if (resp.isSuccessful()) {
+                    return new BaseResponse<>(RespCode.OK, "成功", resp.getResult());
+                } else {
+                    return new BaseResponse<>(RespCode.ERROR, resp.getMsg(), null);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return new BaseResponse<>(RespCode.ERROR, e.getMessage(), null);
+            }
+        });
     }
 }

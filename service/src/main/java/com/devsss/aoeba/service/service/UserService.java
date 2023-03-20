@@ -10,15 +10,16 @@ import java.util.Collections;
 @AllArgsConstructor
 public class UserService {
 
-    public UserInfo getUser(String username) {
-        return new UserInfo();
-    }
+    OptionsService optionsService;
 
     public UserInfo getUser(String username, String password) {
-        UserInfo userInfo = new UserInfo();
-        userInfo.setUserName(username);
-        userInfo.setPassword(password);
-        userInfo.setAuthorities(Collections.singletonList("admin"));
-        return userInfo;
+        if (optionsService.getUserName().equals(username) && optionsService.getPassword().equals(password)) {
+            UserInfo userInfo = new UserInfo();
+            userInfo.setUserName(username);
+            userInfo.setPassword(password);
+            userInfo.setAuthorities(Collections.singletonList("admin"));
+            return userInfo;
+        }
+        return null;
     }
 }

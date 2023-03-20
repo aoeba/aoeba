@@ -7,8 +7,8 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.json.GsonJsonParser;
 import org.springframework.stereotype.Component;
-import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +97,7 @@ public class UpyunStorage implements IStorage {
     }
 
     @Override
-    public Response writeFile(String filePath, MultipartFile file) throws Exception {
+    public Response writeFile(String filePath, InputStream fileInputStream) throws Exception {
         Map<String, String> params = new HashMap<String, String>();
         // 设置待上传文件的 Content-MD5 值
         // 如果又拍云服务端收到的文件MD5值与用户设置的不一致，将回报 406 NotAcceptable 错误
@@ -110,7 +110,7 @@ public class UpyunStorage implements IStorage {
         // 如果缩略图间隔标志符为"!"，密钥为"bac"，上传文件路径为"/folder/test.jpg"，
         // 那么该图片的对外访问地址为：http://空间域名 /folder/test.jpg!bac
         params.put(RestManager.PARAMS.CONTENT_SECRET.getValue(), reqSecretKey);
-        okhttp3.Response res = restManager.writeFile(rootDir + filePath, file.getInputStream(), params);
+        okhttp3.Response res = restManager.writeFile(rootDir + filePath, fileInputStream, params);
         String file_url = "";
         if (res.isSuccessful()) {
             file_url = url + filePath + "!" + reqSecretKey;

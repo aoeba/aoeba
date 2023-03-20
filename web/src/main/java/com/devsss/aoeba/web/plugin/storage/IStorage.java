@@ -1,6 +1,6 @@
 package com.devsss.aoeba.web.plugin.storage;
 
-import org.springframework.web.multipart.MultipartFile;
+import java.io.InputStream;
 
 public interface IStorage {
 
@@ -19,7 +19,7 @@ public interface IStorage {
      */
     Response readDir(String path) throws Exception;
 
-    Response writeFile(String filePath, MultipartFile file) throws Exception;
+    Response writeFile(String filePath, InputStream fileInputStream) throws Exception;
 
     Response readFile(String filePath) throws Exception;
 

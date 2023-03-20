@@ -44,7 +44,7 @@ public class SecurityConfig {
         security.authorizeExchange()
                 .pathMatchers("/login").permitAll()
                 .pathMatchers(HttpMethod.OPTIONS).permitAll()
-                .pathMatchers(HttpMethod.GET, "/index", "/note/**").permitAll()
+                .pathMatchers(HttpMethod.GET, "/index", "/note/**", "/setting/**").permitAll()
                 .anyExchange().authenticated()
                 .and()
                 // 禁用csrf
