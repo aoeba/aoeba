@@ -17,7 +17,7 @@ public interface NoteDao extends R2dbcRepository<Note, String> {
 
     @Query("select a.* from note a where  (0 = :byTags or a.id IN (select b.note_id from note_tag_dz b WHERE b.tag_name in (:tags)) ) " +
             "and (0 = :byKeyword or a.content like concat('%',:keyword,'%') or a.title like concat('%',:keyword,'%') ) " +
-            "and (0 = :byCategory or a.category = :category) LIMIT :offset,:pageSize")
+            "and (0 = :byCategory or a.category = :category) order by created_at desc LIMIT :offset,:pageSize")
     Flux<Note> findByTagsAndKeyword(@Param("byTags") int byTags, @Param("tags") List<String> tags,
                                     @Param("byKeyword") int byKeyword, @Param("keyword") String keyword, @Param("byCategory") int byCategory,
                                     @Param("category") String category, int offset, int pageSize);
@@ -39,6 +39,6 @@ public interface NoteDao extends R2dbcRepository<Note, String> {
     @Query("select * from note where mark = :mark")
     Flux<Note> queryNotesByMark(int mark);
 
-    @Query("select * from note order by create_at desc limit 10")
+    @Query("select * from note order by created_at desc")
     Flux<Note> findTop10ByCreateAtDesc();
 }

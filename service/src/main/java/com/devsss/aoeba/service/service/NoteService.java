@@ -224,6 +224,6 @@ public class NoteService {
      * @return 最近10条note
      */
     public Flux<Note> findTop10ByCreateAtDesc() {
-        return noteDao.findTop10ByCreateAtDesc();
+        return noteDao.findTop10ByCreateAtDesc().take(10);
     }
 }

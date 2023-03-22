@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import lombok.Data;
 import lombok.ToString;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.relational.core.mapping.InsertOnlyProperty;
 
 @Data
 @ToString
@@ -15,6 +16,7 @@ public class Note {
 
     private String content;
 
+    @InsertOnlyProperty
     private LocalDateTime createdAt;
 
     private LocalDateTime deletedAt;
@@ -23,6 +25,7 @@ public class Note {
 
     private String title;
 
+    @InsertOnlyProperty
     private LocalDateTime updatedAt;
 
     private Integer views;
