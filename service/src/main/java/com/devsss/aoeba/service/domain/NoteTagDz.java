@@ -4,8 +4,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 
-import java.util.Date;
-
 @Data
 @NoArgsConstructor
 public class NoteTagDz {
@@ -16,12 +14,6 @@ public class NoteTagDz {
     private String noteId;
 
     private String tagName;
-
-    private Date createdAt;
-
-    private Date deletedAt;
-
-    private Date updatedAt;
 
     public NoteTagDz(String noteId, String tagName) {
         this.noteId = noteId;
