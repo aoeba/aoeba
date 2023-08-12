@@ -81,7 +81,7 @@ public class NoteCtrl {
             try {
                 return new BaseResponse<>(RespCode.OK, "查询成功", BeanUtil.mapListToBeanList(maps, Tag.class));
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                return new BaseResponse<>(RespCode.ERROR, e.getMessage(), null);
             }
         });
     }
@@ -92,7 +92,7 @@ public class NoteCtrl {
             try {
                 return new BaseResponse<>(RespCode.OK, "查询成功", BeanUtil.mapListToBeanList(maps, Category.class));
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                return new BaseResponse<>(RespCode.ERROR, e.getMessage(), null);
             }
         });
     }
